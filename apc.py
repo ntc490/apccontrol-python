@@ -59,15 +59,13 @@ class ConfigFile(object):
         "Read config file from disk, decode yaml and populate fields"
         with open(self.filename, 'r') as handle:
             self.__data = yaml.load(handle)
-            self.hostname = self.__data['hostname']
-            self.user = self.__data['user']
-            # TODO: prompt user for password if one doesn't exist?  At
-            # least handle scenario where password does not exist.
-            self.password = self.__data.get('password') or "apc"
-            self.last_port = self.__data['last_port']
-            self.description = self.__data['description']
-            self.aliases = self._create_aliases(self.__data['aliases'])
-            self.descriptions = self._create_descriptions(self.__data['aliases'])
+            self.hostname = self.__data.get('hostname')
+            self.user = self.__data.get('user')
+            self.password = self.__data.get('password')
+            self.last_port = self.__data.get('last_port')
+            self.description = self.__data.get('description')
+            self.aliases = self._create_aliases(self.__data.get('aliases'))
+            self.descriptions = self._create_descriptions(self.__data.get('aliases'))
 
     def write(self):
         "Write POD to config file in yaml format"
@@ -93,9 +91,10 @@ class ConfigFile(object):
         """
         alias_dict = {}
         for entry in yaml_list:
-            num = entry['port']
-            name = entry['name']
-            alias_dict[num] = name
+            num = entry.get('port')
+            name = entry.get('name')
+            if num is not None and name is not None:
+                alias_dict[num] = name
         return alias_dict
 
     def _create_descriptions(self, yaml_list):
@@ -103,9 +102,10 @@ class ConfigFile(object):
         """
         description_dict = {}
         for entry in yaml_list:
-            num = entry['port']
-            description = entry['description']
-            description_dict[num] = description
+            num = entry.get('port')
+            description = entry.get('description')
+            if num is not None and description is not None:
+                description_dict[num] = description
         return description_dict
 
     def __str__(self):
