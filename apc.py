@@ -120,28 +120,45 @@ class Apc(object):
 # --------------- Command Handlers ---------------
 
 def on_command(args, config):
-    pass
+    print("on command")
 
 def off_command(args, config):
-    pass
+    print("off command")
 
 def reset_command(args, config):
-    pass
+    print("reset command")
 
 def list_command(args, config):
-    pass
+    print("list command")
 
 def set_alias_command(args, config):
-    pass
+    print("set alias command")
 
 def rm_alias_command(args, config):
-    pass
+    print("rm alias command")
 
 def set_host_command(args, config):
-    pass
+    print("set host command")
 
 def run_command(args, config):
-    pass
+    """Find function pointer for command name and call it with args and
+    config file object.  Return error code from the function, or -1 if the 
+
+    """
+    commands = { 'on': on_command,
+                 'off': off_command,
+                 'reset': reset_command,
+                 'list': list_command,
+                 'set-alias': set_alias_command,
+                 'rm-alias': rm_alias_command,
+                 'set-host': set_host_command,
+    }
+    for command in commands:
+        if not command in args:
+            raise ValueError('Invalid command key %s' % command)
+        if args[command]:
+            return commands[command](args, config)
+    raise ValueError('Must pass in at least one True command')
 
 if __name__ == "__main__":
     main()
