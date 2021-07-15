@@ -22,6 +22,7 @@ Options:
   --config <filename>    Point to custom config file [default: ~/.config/apc/config]
 
 """
+import os
 import sys
 import yaml
 import docopt
@@ -44,7 +45,7 @@ class ConfigFile(object):
         aliases, which starts as an empty dictionary
 
         """
-        self.filename = filename
+        self.filename = os.path.expanduser(filename)
         self.hostname = None
         self.user = None
         self.password = None
