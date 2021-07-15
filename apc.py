@@ -75,12 +75,47 @@ class ConfigFile(object):
         return False
 
 
+class Apc(object):
+    def __init__(self, host=None, user=None, password=None, map=None):
+        self.host = host or "apc"
+        self.user = user or "apc"
+        self.password = password or "apc"
+        self.port_map = map or {}
+        self.last_port = None
 
-    def port_name(port_num):
+    def set_map(self, map):
+        """Set port alias map by passing in a dictionary with number is key,
+        and alias as value.
+
+        """
+        self.port_map = map
+
+    def port_name(num):
+        """Return port name/alias associated with port number.  Return
+        'Unknown' if not found.
+
+        """
+        return self.port_map.get(num, 'Unknown')
+
+    def port_num(name):
+        """Return port number associated with port alias 'name'.  Return -1 if
+        not found.
+
+        """
+        for num in self.port_map:
+            if self.port_map[num] == name:
+                return num
+        return -1
+
+    def on(self, port):
         pass
 
-    def port_num(port_name):
+    def off(self, port):
         pass
+
+    def reset(self, port):
+        pass
+
 
 # --------------- Command Handlers ---------------
 
