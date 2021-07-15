@@ -1,0 +1,257 @@
+#!/usr/bin/perl -w
+use strict;
+use Net::Telnet;
+use Getopt::Std;
+
+# Author:         Nathan Crapo
+# Creation date:  May 15, 2002
+#
+# Control the APC Network power switch via telnet.  Right now there
+# are no command line switches.  In the future we could provide an
+# outlet number, optional hostname, and command.
+# Control codes are 1 - on, 2 - off, 4 - reboot
+#
+
+# apc [-h hostname] [-n portnum] [-p portname] [on|off|reboot]
+# last hostname and port num/name will be remembered
+
+
+# ----- Variable declaration -----
+# These could be in the config file too?
+my @portnames    = ('dummy', 'target', 'ncrapo', 'i510', 'atlanta');
+
+my %controlcodes = ( 1 => 'on',
+		     2 => 'off',
+		     3 => 'reboot',
+		     );
+
+my $home_dir                   = $ENV{HOME};
+my $user                       = "apc";
+my $pw                         = "apc";
+my $default_host               = "apcserver";
+my $default_device_number      = 1;
+my $default_control_code       = 3;
+my $configfile                 = $home_dir . "/.apc-config";
+my $host;
+my $device;
+my $controlcode;
+
+# Pull defaults or values from the config file
+get_device_number($configfile, \$device);
+get_control_code($configfile, \$controlcode);
+get_hostname($configfile, \$host);
+
+# process command line parameters...
+process_command(\$device, \$controlcode, \$host);
+
+# Save configuration data to our private file
+save_config($configfile, $device, $controlcode, $host);
+
+# Make the connection to the device and carry out the op
+if (control_device($host, $user, $pw, $device, $controlcode))
+{
+    print "Operation failed...\n";
+}
+else
+{
+    print "Operation succeeded...\n";
+}
+
+exit(0);
+
+
+# --------------- Helper functions ---------------
+
+sub control_device
+{
+    my $hostname  = shift;
+    my $username  = shift;
+    my $password  = shift;
+    my $devicenum = shift;
+    my $code      = shift;
+    my $telnet;
+
+    # Create a new telnet session to work with
+    $telnet = new Net::Telnet(Timeout => 10,
+			      Errmode => 'die');
+
+    # ----- Log in to the device via telnet -----
+    print "Logging in to $hostname...\n";
+
+    $telnet->open($hostname);
+    $telnet->waitfor('/User Name :/');
+    $telnet->print($username);
+    $telnet->waitfor('/Password  :/');
+    $telnet->print($password);
+
+    # ----- Control the device -----
+    print "=====----- Controlling device $devicenum (" . $portnames[$devicenum] . ") -----=====\n";
+
+    # Outlet Manager
+    $telnet->waitfor('/>/');
+    $telnet->print('1');
+
+    # Outlet selection
+    $telnet->waitfor('/>/');
+    $telnet->print($devicenum);
+
+    # Control the Outlet
+    $telnet->waitfor('/>/');
+    $telnet->print('1');
+
+    # Send the command
+    print "Sending command (" . $controlcodes{$code} . ")...\n";
+    $telnet->waitfor('/>/');
+    $telnet->print($code);
+
+    # Confirm the action
+    print "Confirming action...\n";
+    $telnet->waitfor('/cancel :/');
+    $telnet->print('YES');
+    
+    return 0;
+}
+
+sub get_device_number
+{
+    my $filename = shift;
+    my $dev_ref = shift;
+
+    # Check for settings file
+    if (! -e $filename)
+    {
+	$$dev_ref = $default_device_number;
+	return;
+    }
+
+    # Grab data out of the file and look for name first
+    open(CONFIGFILE, $filename) or die "Cannot open config file for reading\n";
+    while (<CONFIGFILE>)
+    {
+	if (m/device=(.*)/)
+	{
+	    $$dev_ref = $1
+	}
+    }
+    close CONFIGFILE;
+    if ($$dev_ref eq "")
+    {
+	$$dev_ref = $default_device_number;
+    }
+}
+
+sub get_control_code
+{
+    my $filename = shift;
+    my $code_ref = shift;
+
+    # Check for settings file
+    if (! -e $filename)
+    {
+	$$code_ref = $default_control_code;
+	return;
+    }
+    # Grab data out of the file and look for control code
+    open(CONFIGFILE, $filename) or die "Cannot open config file for reading\n";
+    while (<CONFIGFILE>)
+    {
+	if (m/code=(.*)/)
+	{
+	    $$code_ref = $1
+	}
+    }
+    close CONFIGFILE;
+    if ($$code_ref eq "")
+    {
+	$$code_ref = $default_control_code;
+    }
+}
+
+sub get_hostname
+{
+    my $filename = shift;
+    my $host_ref = shift;
+
+    # Check for settings file
+    if (! -e $filename)
+    {
+	$$host_ref = $default_host;
+	return;
+    }
+    # Grab data out of the file and look for hostname
+    open(CONFIGFILE, $filename) or die "Cannot open config file for reading\n";
+    while (<CONFIGFILE>)
+    {
+	if (m/hostname=(.*)/)
+	{
+	    $$host_ref = $1
+	}
+    }
+    close CONFIGFILE;
+    if ($$host_ref eq "")
+    {
+	$$host_ref = $default_host;
+    }
+}
+
+sub save_config
+{
+    my $filename    = shift;
+    my $device      = shift;
+    my $controlcode = shift;
+    my $host        = shift;
+
+    open(CONFIGFILE, '>', $filename) or die "Cannot open config file for writing...\n";
+    print CONFIGFILE "device=$device\n";
+    print CONFIGFILE "code=$controlcode\n";
+    print CONFIGFILE "hostname=$host\n";
+    close CONFIGFILE;
+}
+
+sub process_command
+{
+    my $dev_ref = shift;
+    my $code_ref = shift;
+    my $host_ref = shift;
+    my %options;
+    my $port;
+    my $temp;
+    my $code;
+
+    getopts('h:n:p:', \%options);
+    if (defined($options{h}))
+    {
+	$$host_ref = $options{h};
+    }
+
+    if (defined($options{n}))
+    {
+	$$dev_ref=$options{n};
+    }
+
+    if (defined($options{p}))
+    {
+	$temp = 0;
+	foreach $port (@portnames)
+	{
+	    if ($port eq $options{p})
+	    {
+		last;
+	    }
+	    $temp++;
+	}
+	$$dev_ref=$temp;
+    }
+
+    if (defined($ARGV[0]))
+    {
+	foreach $code (keys %controlcodes)
+	{
+	    if ($controlcodes{$code} eq $ARGV[0])
+	    {
+		$$code_ref = $code;
+		last;
+	    }
+	}
+    }
+}
