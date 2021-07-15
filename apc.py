@@ -28,6 +28,8 @@ import yaml
 import docopt
 
 
+# --------------- Application Entrypoint ---------------
+
 def main():
     args = docopt.docopt(__doc__)
     print(args) # TODO: remove this line - initial debug ONLY
@@ -35,6 +37,51 @@ def main():
     error = run_command(args, config)
     sys.exit(error)
     
+# --------------- Command Handlers ---------------
+
+def on_command(args, config):
+    print("on command")
+    config.read()
+    print(config)
+
+def off_command(args, config):
+    print("off command")
+
+def reset_command(args, config):
+    print("reset command")
+
+def list_command(args, config):
+    print("list command")
+
+def set_alias_command(args, config):
+    print("set alias command")
+
+def rm_alias_command(args, config):
+    print("rm alias command")
+
+def set_host_command(args, config):
+    print("set host command")
+
+def run_command(args, config):
+    """Find function pointer for command name and call it with args and
+    config file object.  Return error code from the function, or -1 if the 
+
+    """
+    commands = { 'on': on_command,
+                 'off': off_command,
+                 'reset': reset_command,
+                 'list': list_command,
+                 'set-alias': set_alias_command,
+                 'rm-alias': rm_alias_command,
+                 'set-host': set_host_command,
+    }
+    for command in commands:
+        if not command in args:
+            raise ValueError('Invalid command key %s' % command)
+        if args[command]:
+            return commands[command](args, config)
+    raise ValueError('Must pass in at least one True command')
+
 
 # --------------- Classes ---------------
 
@@ -175,51 +222,6 @@ class Apc(object):
     def reset(self, port):
         pass
 
-
-# --------------- Command Handlers ---------------
-
-def on_command(args, config):
-    print("on command")
-    config.read()
-    print(config)
-
-def off_command(args, config):
-    print("off command")
-
-def reset_command(args, config):
-    print("reset command")
-
-def list_command(args, config):
-    print("list command")
-
-def set_alias_command(args, config):
-    print("set alias command")
-
-def rm_alias_command(args, config):
-    print("rm alias command")
-
-def set_host_command(args, config):
-    print("set host command")
-
-def run_command(args, config):
-    """Find function pointer for command name and call it with args and
-    config file object.  Return error code from the function, or -1 if the 
-
-    """
-    commands = { 'on': on_command,
-                 'off': off_command,
-                 'reset': reset_command,
-                 'list': list_command,
-                 'set-alias': set_alias_command,
-                 'rm-alias': rm_alias_command,
-                 'set-host': set_host_command,
-    }
-    for command in commands:
-        if not command in args:
-            raise ValueError('Invalid command key %s' % command)
-        if args[command]:
-            return commands[command](args, config)
-    raise ValueError('Must pass in at least one True command')
 
 if __name__ == "__main__":
     main()
