@@ -1,0 +1,18 @@
+---
+hostname: apc.lan
+user: apc
+last_port: 4
+description: Network power strip in my server room
+aliases:
+  - port: 1
+    name: tweaker
+    description: old server with parallel port
+  - port: 4
+    name: altanta
+    description: svxlink server
+  - port: 6
+    name: pittsburg
+    description: RPi4 build box
+  - port: 8
+    name: TGP5nn
+    description: VOIP base station
