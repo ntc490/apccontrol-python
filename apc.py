@@ -37,11 +37,44 @@ def main():
 # --------------- Classes ---------------
 
 class ConfigFile(object):
+    """POD (Plain Old Data) class + a little bit of smarts"""
     def __init__(self, filename):
-        self.filename = filename
+        """Must have a filename. All other fields start off as None except
+        aliases, which starts as an empty dictionary
 
-    def read():
+        """
+        self.filename = filename
+        self.hostname = None
+        self.user = None
+        self.password = None
+        self.last_port = None
+        self.description = None
+        self.aliases = {}
+
+    def read(self):
+        "Read config file from disk, decode yaml and populate fields"
         pass
+
+    def write(self):
+        "Write POD to config file in yaml format"
+        pass
+
+    def set_alias(self, num, name):
+        "Add or overwrite a port alias"
+        pass
+
+    def rm_alias(self, name):
+        """Remove a port alias.  Return True if we removed an existing alias,
+        or False if nothing by that name was found.
+
+        """
+        for num in self.aliases:
+            if self.aliases[num] == name:
+                del self.aliases[num]
+                return True
+        return False
+
+
 
     def port_name(port_num):
         pass
