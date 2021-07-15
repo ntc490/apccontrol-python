@@ -23,6 +23,7 @@ Options:
 
 """
 import sys
+import yaml
 import docopt
 
 
@@ -50,10 +51,22 @@ class ConfigFile(object):
         self.last_port = None
         self.description = None
         self.aliases = {}
+        self.descriptions = {}
+        self.__data = None
 
     def read(self):
         "Read config file from disk, decode yaml and populate fields"
-        pass
+        with open(self.filename, 'r') as handle:
+            self.__data = yaml.load(handle)
+            self.hostname = self.__data['hostname']
+            self.user = self.__data['user']
+            # TODO: prompt user for password if one doesn't exist?  At
+            # least handle scenario where password does not exist.
+            self.password = self.__data.get('password') or "apc"
+            self.last_port = self.__data['last_port']
+            self.description = self.__data['description']
+            self.aliases = self._create_aliases(self.__data['aliases'])
+            self.descriptions = self._create_descriptions(self.__data['aliases'])
 
     def write(self):
         "Write POD to config file in yaml format"
@@ -74,6 +87,51 @@ class ConfigFile(object):
                 return True
         return False
 
+    def _create_aliases(self, yaml_list):
+        """Turn list of dictionaries into a dictionary with the port number and alias
+        """
+        alias_dict = {}
+        for entry in yaml_list:
+            num = entry['port']
+            name = entry['name']
+            alias_dict[num] = name
+        return alias_dict
+
+    def _create_descriptions(self, yaml_list):
+        """Turn list of dictionaries into a dictionary with the port number and description
+        """
+        description_dict = {}
+        for entry in yaml_list:
+            num = entry['port']
+            description = entry['description']
+            description_dict[num] = description
+        return description_dict
+
+    def __str__(self):
+        descr = f"""{{filename: '{self.filename}', \
+hostname: '{self.hostname}', \
+user: '{self.user}', \
+password: '{self.password}', \
+last_port: '{self.last_port}', \
+description: '{self.description}', \
+aliases: {{"""
+
+        secondary_port = False
+        for port in self.aliases:
+            if secondary_port:
+                descr += ", "
+            secondary_port = True
+            descr += f"{port}: '{self.aliases[port]}'"
+
+        descr += "}, descriptions: {"
+        secondary_port = False
+        for port in self.descriptions:
+            if secondary_port:
+                descr += ", "
+            secondary_port = True
+            descr += f"{port}: '{self.descriptions[port]}'"
+        descr += "}}"
+        return descr
 
 class Apc(object):
     def __init__(self, host=None, user=None, password=None, map=None):
@@ -121,6 +179,8 @@ class Apc(object):
 
 def on_command(args, config):
     print("on command")
+    config.read()
+    print(config)
 
 def off_command(args, config):
     print("off command")
